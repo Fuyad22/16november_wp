@@ -1,59 +1,107 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# WP16 Laravel + React Stack
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Full-stack demo that pairs a Laravel 10+ backend (file-based storage in `storage/posts.json`) with a React + Tailwind frontend for managing posts, handling email verification, and showcasing deployment to GitHub Pages.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- JSON-backed API: no external database is required; posts are stored in `storage/posts.json`.
+- Email verification flow with 6-digit codes (mailers stubbed for local dev, but logic is ready for SMTP).
+- React Router powered UI with dedicated pages for Home, Create Post, Verify Email, and Manage Posts.
+- Single command (`npm run server`) that boots both Laravel (`php artisan serve`) and the React dev server through `concurrently`.
+- GitHub Pages deployment pipeline for the frontend with environment overrides via `.env.production`.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Laravel 10 / PHP 8.2+
+- React (Create React App) + TailwindCSS + lucide-react icons
+- Node.js/npm for tooling, `concurrently` for multi-process scripts
+- GitHub Pages for frontend hosting (see `GITHUB_PAGES_DEPLOY.md`)
 
-## Learning Laravel
+## Prerequisites
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- PHP 8.2+
+- Composer 2+
+- Node.js 18+ and npm
+- Git Bash (or any shell) with access to Git + OpenSSL (for Laravel key generation)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Local Setup
 
-## Laravel Sponsors
+```bash
+git clone https://github.com/Fuyad22/16november_wp.git
+cd 16november_wp
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+composer install
+npm install          # installs root dependencies (concurrently, vite helpers, etc.)
+cd frontend && npm install && cd ..
 
-### Premium Partners
+cp .env.example .env
+php artisan key:generate
+# configure mail settings if you plan to send real emails
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+If you need seeded storage, copy `storage/posts.example.json` (create one) to `storage/posts.json`, or hit the API once to let Laravel create it automatically.
 
-## Contributing
+## Running the Project
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+npm run server
+```
 
-## Code of Conduct
+The script launches:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- Backend: `php artisan serve --host=0.0.0.0 --port=8000`
+- Frontend: `npm start` within `frontend/`
 
-## Security Vulnerabilities
+Visit `http://localhost:3000` for the React app. API requests are proxied to `http://127.0.0.1:8000` by default.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Useful alternatives:
+
+- `npm run backend` – Laravel server only.
+- `npm run frontend` – React dev server only (expects backend already running).
+
+## Environment Variables
+
+- Laravel: configure `.env` as usual (`APP_URL`, `MAIL_MAILER`, etc.). File storage uses `storage/posts.json`, so no DB credentials are required.
+- React: create `frontend/.env.local` for local overrides and `frontend/.env.production` for GitHub Pages (already tracked with `REACT_APP_API_URL`).
+
+When deploying, update `REACT_APP_API_URL` so the static site knows how to reach your hosted Laravel API.
+
+## Email Verification Flow
+
+1. User submits email and receives a 6-digit code (logged locally if mail is not configured).
+2. `EmailVerificationController` validates the code and issues a temporary token.
+3. Token is required to create posts via `PostController`.
+
+Because we persist everything to JSON, restart-safe verification works out-of-the-box.
+
+## Frontend Pages
+
+- **Home** – quick navigation cards for each workflow.
+- **Create Post** – token + post submission form.
+- **Verify Email** – request/verify 6-digit codes.
+- **Manage Posts** – list posts, delete them, and view status indicators.
+
+All routes live in `frontend/src/App.js` using `react-router-dom`.
+
+## Deploying to GitHub Pages
+
+1. Host the Laravel API (Render, Railway, VPS, etc.).
+2. Update `frontend/.env.production` with the public API URL.
+3. From the repo root run:
+
+	```bash
+	cd frontend
+	npm run deploy
+	```
+
+Detailed backend hosting, CORS configuration, and DNS guidance is in `GITHUB_PAGES_DEPLOY.md`.
+
+## Troubleshooting
+
+- **Port already in use**: stop stray Node/PHP processes (`taskkill /F /IM node.exe` on Windows) before re-running `npm run server`.
+- **storage/posts.json missing**: create the file manually or let Laravel write it by hitting `POST /api/posts` once.
+- **CORS errors on GitHub Pages**: confirm the deployed backend lists the GitHub Pages domain in its allowed origins.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT. See `LICENSE` if you plan to reuse significant portions.
